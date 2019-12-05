@@ -9,11 +9,15 @@ const taskSchemaObject = {
     completed:{
         type:Boolean,
         default:false
+    },
+    owner:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"User",
+        required:true
     }
 }
 
 const taskSchema = mongoose.Schema(taskSchemaObject);
-
 
 const taskModel = mongoose.model("Task",taskSchema);
 

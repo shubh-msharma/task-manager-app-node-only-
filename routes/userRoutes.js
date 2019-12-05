@@ -5,11 +5,12 @@ const router = express.Router();
 
 
 router.post('/user/signup',async (req,res)=>{
+    
     const user = new User(req.body);
     try{
         await user.save()
         const token = await user.generateAuthToken()
-        return res.status(200).send({user,token})
+        return res.status(201).send({user,token})
     }catch(error){
         return res.status(400).send(error);
     }
@@ -26,50 +27,55 @@ router.post('/user/login',async (req,res)=>{
     }
 })
 
-router.get('/user',auth,async (req,res)=>{
+router.post('/user/logout',auth,async(req,res)=>{
     try {
-        const users = await User.find({})
-        if(! users){
-            return res.status(404).send("no user found")
-        }
-        res.status(200).send(users);
+        req.user.tokens = req.user.tokens.filter(token=>{
+            return token.token !== req.token
+        })
+        await req.user.save();
+        res.send()
+    } catch (error) {
+        console.log(error.message)
+        res.status(500).send(error.message);
+    }
+})
+
+router.post('/user/logoutAll',auth,async(req,res)=>{
+    try {
+        req.user.tokens = [];
+        await req.user.save();
+        res.send()
+    } catch (error) {
+        res.status(500).send(error);
+    }
+})
+
+router.get('/user/me',auth,async (req,res)=>{
+    try {
+        res.status(200).send(req.user);
     } catch (error) {
         res.status(400).send(error.message);
     }
 })
 
-router.get('/user/:id',async (req,res)=>{
-    const _id  = req.params.id
-    try {
-        const user  = await User.findById(_id);
-        if(! user){
-            return res.status(404).send("no usser with "+req.params.id+" id");
-        }
-        res.status(200).send(user)
-    } catch (error) {
-        res.status(400).send(error);
-    }
-})
 
-router.patch('/user/:id',async (req,res)=>{
+
+router.patch('/user/me',auth,async (req,res)=>{
 
     try {
-        const user = await User.findById(req.params.id);
+        const user = req.user;
         Object.keys(req.body).forEach(prop=>user[prop] = req.body[prop]);
         await user.save()
-        // const user = await User.findByIdAndUpdate(req.params.id,req.body,{new:true,runValidators:true})
         res.status(200).send(user);
     } catch (error) {
         res.status(400).send(error);
     }
 })
 
-router.delete('/user/:id',async (req,res)=>{
+router.delete('/user/me',auth,async (req,res)=>{
     try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if(!user){
-            res.status(404).send("no user by this id "+req.params.id);
-        }
+        await req.user.remove();
+        res.status(200).send(req.user);
     } catch (error) {
         res.status(400).send(error);
     }

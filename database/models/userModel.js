@@ -41,7 +41,21 @@ const uesrSchemaObject = {
     ]
 }
 
-const userSchema =  new mongoose.Schema(uesrSchemaObject)
+const userSchema =  new mongoose.Schema(uesrSchemaObject);
+
+userSchema.virtual('task',{
+    ref:'Task',
+    localField:'_id',
+    foreignField:'owner'
+})
+
+
+userSchema.methods.toJSON = function(){
+    const userObject = this.toObject();
+    delete userObject.password;
+    delete userObject.tokens;
+    return userObject
+}
 
 userSchema.methods.generateAuthToken = async function(){
     const user = this

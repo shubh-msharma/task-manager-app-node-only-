@@ -1,10 +1,14 @@
 const express = require('express');
 const Task = require('../database/models/taskModel')
 const router = express.Router();
+const auth = require('../middleware/auth')
 
 
-router.post('/task/newtask',async (req,res)=>{
-    const task = new Task(req.body);
+router.post('/task/newtask',auth,async (req,res)=>{
+    const task = new Task({
+        ...req.body,
+        owner:req.user._id
+        });
     try{
         await task.save()
         return res.status(200).send(task)
@@ -14,9 +18,18 @@ router.post('/task/newtask',async (req,res)=>{
 })
 
 
-router.get('/task',async (req,res)=>{
+router.get('/task',auth,async (req,res)=>{
     try {
-        const tasks = await Task.find({})
+        await req.user.populate('task').execPopulate()
+        res.status(200).send(req.user.task);
+    } catch (error) {
+        res.status(400).send(error);
+    }
+})
+
+router.get('/task/complete',auth,async (req,res)=>{
+    try {
+        const tasks = await Task.findOne({completed:true,owner:req.user._id})
         if(! tasks){
             return res.status(404).send("no task found")
         }
@@ -26,9 +39,9 @@ router.get('/task',async (req,res)=>{
     }
 })
 
-router.get('/task/complete',async (req,res)=>{
+router.get('/task/incomplete',auth,async (req,res)=>{
     try {
-        const tasks = await Task.findOne({completed:true})
+        const tasks = await Task.findOne({completed:false,owner:req.user._id})
         if(! tasks){
             return res.status(404).send("no task found")
         }
@@ -38,22 +51,10 @@ router.get('/task/complete',async (req,res)=>{
     }
 })
 
-router.get('/task/incomplete',async (req,res)=>{
-    try {
-        const tasks = await Task.findOne({completed:false})
-        if(! tasks){
-            return res.status(404).send("no task found")
-        }
-        res.status(200).send(tasks);
-    } catch (error) {
-        res.status(400).send(error);
-    }
-})
-
-router.get('/task/:id',async (req,res)=>{
+router.get('/task/:id',auth,async (req,res)=>{
     const _id  = req.params.id
     try {
-        const task  = await Task.findById(_id);
+        const task  = await Task.find({_id,owner:req.user._id});
         if(! task){
             return res.status(404).send("no usser with "+req.params.id+" id");
         }
@@ -63,10 +64,10 @@ router.get('/task/:id',async (req,res)=>{
     }
 })
 
-router.patch('/task/:id',async (req,res)=>{
+router.patch('/task/:id',auth,async (req,res)=>{
 
     try {
-        const task = await Task.findById(req.params.id)
+        const task = await Task.find({_id:req.params.id,owner:req.user._id})
         Object.keys(req.body).forEach(prop=>task[prop] = erq.body[prop]);
         await task.save()
         // const task = await Task.findByIdAndUpdate(req.params.id,req.body)
@@ -76,9 +77,9 @@ router.patch('/task/:id',async (req,res)=>{
     }
 })
 
-router.delete('/task/:id',async (req,res)=>{
+router.delete('/task/:id',auth,async (req,res)=>{
     try {
-        const task = await Task.findByIdAndDelete(req.params.id);
+        const task = await Task.deleteOne({_id:req.params.id,owner:req.user._id});
         if(!task){
             res.status(404).send("no task by this id "+req.params.id);
         }
