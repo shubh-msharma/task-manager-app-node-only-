@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt  = require('bcryptjs');
 const jwt =  require('jsonwebtoken');
+const Task = require('./taskModel')
 
 const uesrSchemaObject = {
     name:{
@@ -38,10 +39,17 @@ const uesrSchemaObject = {
                 required:true
             }
         }
-    ]
+    ],
+    uploads:[{
+        images:{
+        type:mongoose.Schema.Types.Buffer}
+    }],
+    profilePic:{
+        type:mongoose.Schema.Types.Buffer
+    }
 }
 
-const userSchema =  new mongoose.Schema(uesrSchemaObject);
+const userSchema =  new mongoose.Schema(uesrSchemaObject,{timestamps:true});
 
 userSchema.virtual('task',{
     ref:'Task',
@@ -77,6 +85,11 @@ userSchema.statics.findByCredentials = async (email,password)=>{
     return user
 }
 
+
+userSchema.pre('remove',async function(next){
+    await Task.deleteMany({owner:this._id});
+    next()
+})
 
 userSchema.pre('save',async function(next){
     if(this.isModified('password')){

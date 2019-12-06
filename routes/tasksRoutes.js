@@ -20,7 +20,13 @@ router.post('/task/newtask',auth,async (req,res)=>{
 
 router.get('/task',auth,async (req,res)=>{
     try {
-        await req.user.populate('task').execPopulate()
+        await req.user.populate({
+            path:"task",
+            options:{
+                limit:parseInt(req.query.limit),
+                skip:parseInt(req.query.skip) 
+            }
+        }).execPopulate()
         res.status(200).send(req.user.task);
     } catch (error) {
         res.status(400).send(error);

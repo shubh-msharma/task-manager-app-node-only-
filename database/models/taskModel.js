@@ -17,7 +17,7 @@ const taskSchemaObject = {
     }
 }
 
-const taskSchema = mongoose.Schema(taskSchemaObject);
+const taskSchema = new mongoose.Schema(taskSchemaObject,{timestamps:true});
 
 const taskModel = mongoose.model("Task",taskSchema);
 
