@@ -4,22 +4,8 @@ const auth = require('../middleware/auth')
 const router = express.Router();
 const multer = require('multer')
 const fs = require('fs')
+const { sendWelcomeEmail ,sendGoodByeEmail } = require('../email/account')
 
-
-// var storage = multer.diskStorage({
-//     destination: (req, file, cb) => {
-//         fs.mkdirSync(`users/images/profile/${req.user._id}`, { recursive: true })
-//         cb(null, `users/images/profile/${req.user._id}`)
-//     },
-//     filename: (req, file, cb) => {
-//         if (file.originalname.endsWith('.jpg')) {
-//             cb(null, file.fieldname + '-' + req.user.name + '.jpg')
-//         }
-//         if (file.originalname.endsWith('.pdf')) {
-//             cb(null, file.fieldname + '-' + req.user.name + '.pdf')
-//         }
-//     }
-// });
 
 var upload = multer({
     // storage: storage,
@@ -40,7 +26,8 @@ router.post('/user/signup', async (req, res) => {
 
     const user = new User(req.body);
     try {
-        await user.save()
+        await user.save();
+        sendWelcomeEmail(user.name,user.email);
         const token = await user.generateAuthToken()
         return res.status(201).send({ user, token })
     } catch (error) {
@@ -107,6 +94,7 @@ router.patch('/user/me', auth, async (req, res) => {
 router.delete('/user/me', auth, async (req, res) => {
     try {
         await req.user.remove();
+        sendGoodByeEmail(req.user.name.req.user.email)
         res.status(200).send(req.user);
     } catch (error) {
         res.status(400).send(error);

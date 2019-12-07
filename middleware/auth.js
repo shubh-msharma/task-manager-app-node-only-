@@ -5,7 +5,7 @@ const User = require('../database/models/userModel')
 const auth = async (req, res, next) => {
     const token = req.header('Authorization').replace('Bearer ','');
     try {
-        const decodedData = await jwt.verify(token,'iamprogrammer');
+        const decodedData = await jwt.verify(token,process.env.JWT_SECRET_STRING);
         if(!decodedData){
             throw new Error();
         }
